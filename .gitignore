@@ -50,3 +50,18 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# VS code directories
+.vscode/
+
+# previous/experimental code
+workbench/
+
+# external dependencies
+ext/
+ref/
+
+# build for now
+build/
+lib/
+bin/
