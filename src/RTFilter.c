@@ -93,6 +93,8 @@ void RTFilter_initialize(RTFilter * rtf, double sample) {
 }
 
 double RTFilter_update(RTFilter * rtf, double sample) {
+    //rtf->update(rtf, sample);
+    //return rtf->filtered_value;
     if (rtf->initialized == FILTER_INITIALIZED) {
         rtf->update(rtf, sample);
     }
@@ -237,8 +239,9 @@ int RTFIRFilter_stable_init(RTFilter * rtf, double sample) {
     size_t i = rtff->fb.nb-1; // iir order-1
     rtff->state[i] = 0.0;
     double csv = 0.0;
-    while (i--) { // decrement after check
+    while (i) { // decrement after check
         csv += b[i];
+        i--;
         rtff->state[i] = csv*sample;
     }
     rtf->filtered_value = sample;
@@ -364,9 +367,11 @@ void RTIIRFilter_get_all(RTFilter * rtf, double ** a, size_t * na, double ** b, 
     IIRFilterBank * ifb = &((RTIIRFilter *) rtf)->ifb;
     *na = ifb->na;
     *nb = ifb->fb.nb;
-    *a = ifb->fb.b + *na;
+    *a = ifb->fb.b + *nb;
     *b = ifb->fb.b;
 }
+
+//int test = 1;
 
 int RTIIRFilter_update(RTFilter * rtf, double sample) {
     RTIIRFilter * rtif = (RTIIRFilter *) rtf;
@@ -374,22 +379,41 @@ int RTIIRFilter_update(RTFilter * rtf, double sample) {
     double *a = NULL, *b = NULL;
     RTIIRFilter_get_all(rtf, &a, &na, &b, &nb);
     size_t N = ((nb >= na) ? nb : na) - 1;
+    /*
+    if (!test) {
+        printf("na = %zu, nb = %zu\na = ", na, nb);
+        for (size_t i = 0; i < na; i++) {
+            printf("%.8f ", a[i]);
+        }
+        printf("\nb = ");
+        for (size_t i = 0; i < nb; i++) {
+            printf("%.8f ", b[i]);
+        }
+        printf("\n");
+        test = 1;
+    }
+    */
 
-    rtf->filtered_value = (sample*b[0] + rtif->state[0])/a[0];
+    double new_filt = (sample*b[0] + rtif->state[0])/a[0];
 
-    double state_value = 0;
+    double state_value = 0.0;
     size_t i = 0;
+    //printf("state ingesting new sample\n");
     while (i < N) {
-        state_value = 0;
+        //printf("%.5f ", rtif->state[i]);
+        state_value = 0.0;
         if (i < nb - 1) {
-            state_value += b[i+1]*sample;
+            state_value += b[i+1] * sample;
         }
         if (i < na - 1) {
-            state_value -= a[i+1]*rtf->filtered_value;
+            state_value -= a[i+1] * new_filt;
         }
         rtif->state[i] = rtif->state[i+1] + state_value;
         i++;
     }
+    //printf("%.5f\n", rtif->state[i]);
+
+    rtf->filtered_value = new_filt;
     
     return 0;
 }
@@ -403,13 +427,14 @@ int RTIIRFilter_stable_init(RTFilter * rtf, double sample) {
     size_t i = ((nb >= na) ? nb : na) - 1; // iir order
     rtif->state[i] = 0.0;
     double csv = 0.0;
-    while (i--) { // decrement after check
+    while (i) { // decrement after check
         if (i < nb) {
             csv += b[i];
         }
         if (i < na) {
             csv -= a[i];
         }
+        i--;
         rtif->state[i] = csv*sample;
     }
     rtf->filtered_value = sample;
@@ -960,6 +985,7 @@ int digital_prototype_to_IIRFilterBank(IIRFilterBank * ifb, size_t L, double wp,
     double * pgain = IIRFilterBank_get_b(ifb);
     double * b = pgain;
     double * a = IIRFilterBank_get_a(ifb);
+    printf("gain factor %.16f\n", *pgain);
     if (poly_exp == 1) {
         Polynomial p2;
         double multipliers[3] = {1.0, 1.0, 0.0};
@@ -1077,7 +1103,7 @@ int digital_prototype_to_IIRFilterBank(IIRFilterBank * ifb, size_t L, double wp,
         sumb += b[i];
         suma += a[i];
     }
-    printf("sum b = %.8f\nsum a = %.8f\n", sumb, suma);
+    //printf("sum b = %.8f\nsum a = %.8f\n", sumb, suma);
     return 0;
 }
 
@@ -1164,8 +1190,8 @@ int butterworth(RTIIRFilter * rtif, size_t order, double wl, double wu, unsigned
         return 2;
     }
     if (!initialize) {
-        initialize = RTIIRFilter_stable_init;
-    }   
+        rtif->rtf.initialize = RTIIRFilter_stable_init;
+    }
 
     //printf("order %zu, mult * order + 1, %zu\n", order, mult * order + 1);
     double w0 = wu;

@@ -5,6 +5,8 @@ CC = gcc
 MAIN_NAME = dsp
 
 BUILD_DIR = ../bin/
+WORK_DIR = 
+PYLIB_DIR = 
 LIB_DIR = ../lib/
 
 EXT = 
@@ -23,6 +25,10 @@ ifeq ($(OS),Windows_NT)
     CCFLAGS += -D WIN32
 	EXT = .dll
 	LIB_NAME = $(MAIN_NAME)
+    COPY_CMD = copy /y
+    COPY_SRC = ..\bin\\
+    WORK_DIR = ..\workbench\\
+    PYLIB_DIR = ..\python\Lib\\
     #ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
     #    CCFLAGS += -D AMD64
     #else
@@ -44,6 +50,10 @@ else
 		LFLAGS += -lm
         CCFLAGS += -D LINUX
     endif
+    WORK_DIR = ../workbench/
+    PYLIB_DIR = ../python/Lib/
+    COPY_CMD = cp
+    COPY_SRC = $(BUILD_DIR)
     #ifeq ($(UNAME_S),Darwin)
     #    CCFLAGS += -D OSX
     #endif
@@ -63,7 +73,15 @@ LFLAGS += -Wl,--out-implib,$(LIB_DIR)$(LIB_NAME).lib
 
 CFLAGS += -o $(BUILD_DIR)$(LIB_NAME)$(EXT)
 
-all: build
+all: build install
 
 build:
 	$(CC) $(CFLAGS) $(IFLAGS) $(CCFLAGS) RTFilter.c polynomials.c Lpolys.c legendre.c chebyshev.c hermite.c laguerre.c $(LFLAGS)
+
+install: install_pylib install_workbench
+
+install_pylib:
+	$(COPY_CMD) $(COPY_SRC)$(LIB_NAME)$(EXT) $(PYLIB_DIR)
+
+install_workbench:
+	$(COPY_CMD) $(COPY_SRC)$(LIB_NAME)$(EXT) $(WORK_DIR)
