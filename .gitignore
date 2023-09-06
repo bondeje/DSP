@@ -56,7 +56,7 @@ dkms.conf
 
 # previous/experimental code
 workbench/
-python/
+__pycache__/
 
 # external dependencies
 ext/

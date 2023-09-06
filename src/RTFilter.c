@@ -985,7 +985,7 @@ int digital_prototype_to_IIRFilterBank(IIRFilterBank * ifb, size_t L, double wp,
     double * pgain = IIRFilterBank_get_b(ifb);
     double * b = pgain;
     double * a = IIRFilterBank_get_a(ifb);
-    printf("gain factor %.16f\n", *pgain);
+    //printf("gain factor %.16f\n", *pgain);
     if (poly_exp == 1) {
         Polynomial p2;
         double multipliers[3] = {1.0, 1.0, 0.0};
@@ -1095,14 +1095,14 @@ int digital_prototype_to_IIRFilterBank(IIRFilterBank * ifb, size_t L, double wp,
         return 1;
     }
     //IIRFilterBank_print((FilterBank *) ifb);
-    b = IIRFilterBank_get_b(ifb);
-    double sumb = 0.0;
-    a = IIRFilterBank_get_a(ifb);
-    double suma = 0.0;
-    for (size_t i = 0; i < IIRFilterBank_get_b_size(ifb); i++) {
-        sumb += b[i];
-        suma += a[i];
-    }
+    //b = IIRFilterBank_get_b(ifb);
+    //double sumb = 0.0;
+    //a = IIRFilterBank_get_a(ifb);
+    //double suma = 0.0;
+    //for (size_t i = 0; i < IIRFilterBank_get_b_size(ifb); i++) {
+    //    sumb += b[i];
+    //    suma += a[i];
+    //}
     //printf("sum b = %.8f\nsum a = %.8f\n", sumb, suma);
     return 0;
 }
