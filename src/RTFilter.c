@@ -4,7 +4,7 @@
 // high-level TODO:
 //      make all the dp_lp2... accept an RTFilter object so that I can make all the other structs private. Then the public API only needs to know about an RTFilter
 #ifdef DEBUG_MALLOC
-    #include "../mallocs/debug_malloc.h"
+    #include "../../mallocs/debug_malloc.h"
 #endif
 #include <stddef.h>
 #include <stdarg.h>
@@ -1233,7 +1233,8 @@ int chebyshev1_digital_prototype(IIRFilterBank * ifb, size_t L, double ripple, d
     double W = tan(M_PI * w0 / 2);
     double wsinhf = W * sinhf;
     double W2 = pow(W, 2);
-    *pgain = 1.0; // gain is always 0 for Butterworth
+    //*pgain = 1.0; 
+    *pgain = (L & 1) ? 1.0 : 1.0/pow(ripple * ripple + 1, .5); // gain for chebyshev1 must be modified since the DC is not necessarily 0
     //printf("starting loop to calculate coefficients: L %zu, M1 %zu, M %zu, N1 %zu, N %zu\n", *L, M1, M, N1, N);
     while (i < N2) { // changed from L -->N2 because we do not have to worry so much about after N2 for butterworth
         double num = 1.0, den = 1.0;
