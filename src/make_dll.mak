@@ -76,7 +76,7 @@ CFLAGS += -o $(BUILD_DIR)$(LIB_NAME)$(EXT)
 all: build install
 
 build:
-	$(CC) $(CFLAGS) $(IFLAGS) $(CCFLAGS) RTFilter.c polynomials.c Lpolys.c legendre.c chebyshev.c hermite.c laguerre.c $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) $(CCFLAGS) RTFilter.c polynomials.c Lpolys.c legendre.c chebyshev.c hermite.c laguerre.c filterutils.c $(LFLAGS)
 
 install: install_pylib install_workbench
 

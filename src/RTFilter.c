@@ -1460,7 +1460,7 @@ int thiran(RTIIRFilter * rtif, size_t order, double tau, int (*initialize)(RTFil
     if (!rtif || tau == 0 || !order) {
         return 1;
     }
-    if (IIRFilterBank_get_a_size(&rtif->ifb) < 1 || IIRFilterBank_get_b_size(&rtif->ifb) < order + 1)  {
+    if (IIRFilterBank_get_b_size(&rtif->ifb) < 1 || IIRFilterBank_get_a_size(&rtif->ifb) < order + 1)  {
         return 2;
     }
     if (!initialize) {

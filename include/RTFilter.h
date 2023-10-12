@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <dsputils.h>
+#include <math.h>
 
 // configuration options
 #ifndef DSP_MALLOC
@@ -85,6 +86,7 @@ EXPORT void RTFilter_del(RTFilter * rtf);
 // note that this is very different from RTFilter_init
 EXPORT void RTFilter_initialize(RTFilter * rtf, double sample);
 EXPORT double RTFilter_update(RTFilter * rtf, double sample);
+EXPORT int RTFilter_updaten(double * out, RTFilter * rtf, double * samples, size_t n);
 
 EXPORT void FilterBank_init(FilterBank * fb, double * b, size_t nb);
 EXPORT FilterBank * FilterBank_new(double * b, size_t nb);
@@ -141,8 +143,6 @@ EXPORT RTIIRFilter * RTIIRFilter_new(double * a, size_t na, double * b, size_t n
 
 EXPORT int RTIIRFilter_update(RTFilter * rtf, double sample);
 
-EXPORT int RTFilter_updaten(double * out, RTFilter * rtf, double * samples, size_t n);
-
 EXPORT int RTIIRFilter_stable_init(RTFilter * rtf, double sample);
 
 EXPORT void RTIIRFilter_print(RTIIRFilter * rtif);
@@ -161,30 +161,6 @@ wl and wu are in units of the Nyquist frequency 1/(2*T)
 */
 EXPORT int butterworth(RTIIRFilter * rtif, size_t order, double wl, double wu, unsigned int flags, \
     int (*initialize)(RTFilter * rtf, double sample));
-
-// This converts the epsilon in the standard definition of the Chebyshev filters to the decibel ripples accepted by scipy and Matlab
-// for Chebyshev Type I
-EXPORT inline double passband_ripple_epsilon_to_db(double epsilon) {
-    return 10.0 * log10(1 + pow(epsilon, 2));
-}
-
-// This converts the ripple from Matlab and scipy chebyshev filters to the epsilon used in the standard definitions
-// for Chebyshev Type I
-EXPORT inline double passband_ripple_db_to_epsilon(double db) {
-    return sqrt(pow(10, db / 10.0) - 1);
-}
-
-// This converts the epsilon in the standard definition of the Chebyshev filters to the decibel ripples accepted by scipy and Matlab
-// for Chebyshev Type I
-EXPORT inline double stopband_ripple_epsilon_to_db(double epsilon) {
-    return 10.0 * log10(pow(1/epsilon, 2) + 1);
-}
-
-// This converts the ripple from Matlab and scipy chebyshev filters to the epsilon used in the standard definitions
-// for Chebyshev Type I
-EXPORT inline double stopband_ripple_db_to_epsilon(double db) {
-    return 1.0 / sqrt(pow(10, db / 10.0) - 1.0);
-}
 
 EXPORT int chebyshev1(RTIIRFilter * rtif, size_t order, double ripple, double wl, double wu, \
     unsigned int flags, int (*initialize)(RTFilter * rtf, double sample));
