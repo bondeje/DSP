@@ -1,12 +1,13 @@
 import os
 from ctypes import *
+os.environ['PATH'] = os.path.join(os.path.split(__file__)[0], 'Lib') + os.pathsep + os.environ['PATH']
 
 dspdll = None
 
 if os.name == 'nt': # Windows
-    dspdll = cdll.LoadLibrary('Lib\\dsp')
+    dspdll = cdll.LoadLibrary('dsp')
 elif os.name == 'posix': # Linux. Not tested on others
-    dspdll = ctypes.cdll.LoadLibrary('Lib\\dsp.so')
+    dspdll = ctypes.cdll.LoadLibrary('dsp.so')
 
 def byref_(obj, offset=0):
     if obj is not None:
@@ -49,4 +50,10 @@ class RTIIRFilter_(Structure):
 
 dspdll.RTFilter_update.argtypes = [POINTER(RTFilter_), c_double]
 dspdll.RTFilter_update.restype = c_double
+dspdll.RTFilter_updaten.argtypes = [POINTER(c_double), POINTER(RTFilter_), POINTER(c_double), c_size_t]
+dspdll.RTFilter_updaten.restype = c_int
+dspdll.RTFilter_updaten.argtypes = [POINTER(c_double), POINTER(RTFilter_), POINTER(c_double), c_size_t]
+dspdll.butterworth.restype = c_int
 dspdll.butterworth.argtypes = [POINTER(RTIIRFilter_), c_size_t, c_double, c_double, c_uint, POINTER(i_RTFilter__d)]
+dspdll.thiran.restype = c_int
+dspdll.thiran.argtypes = [POINTER(RTIIRFilter_), c_size_t, c_double, POINTER(i_RTFilter__d)]

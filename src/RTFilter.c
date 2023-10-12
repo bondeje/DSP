@@ -2,7 +2,10 @@
 // gcc -pedantic -Wall -O3 -g -DDEBUG_MALLOC RTFilter.c polynomials.c Lpolys.c legendre.c chebyshev.c ../mallocs/debug_malloc.c -o f.exe
 
 // high-level TODO:
-//      make all the dp_lp2... accept an RTFilter object so that I can make all the other structs private. Then the public API only needs to know about an RTFilter
+//   reconsider struct layouts. Right now, IIRFilters and FIRFilters each get a pointer to update and del, which should really belong to a class object
+//   solving this would require some method to solve the diamond problem and have actual inheritance
+
+
 #ifdef DEBUG_MALLOC
     #include "../../mallocs/debug_malloc.h"
 #endif
@@ -102,6 +105,17 @@ double RTFilter_update(RTFilter * rtf, double sample) {
         RTFilter_initialize(rtf, sample);
     }
     return rtf->filtered_value;
+}
+
+// convenience function for doing a series of updates. There might be a more efficient way to do this with matrix math
+int RTFilter_updaten(double * out, RTFilter * rtf, double * samples, size_t n) {
+    if (!out || !rtf || !samples) {
+        return 1;
+    }
+    for (size_t i = 0; i < n; i++) {
+        out[i] = RTFilter_update(rtf, samples[i]);
+    }
+    return 0;
 }
 
 void FilterBank_print(FilterBank * fb) {
@@ -232,6 +246,7 @@ int RTFIRFilter_update(RTFilter * rtf, double sample) {
     return 0;
 }
 
+// TODO: this might have to get fixed
 int RTFIRFilter_stable_init(RTFilter * rtf, double sample) {
     RTFIRFilter * rtff = (RTFIRFilter *)rtf;
     double * b = rtff->fb.b;
@@ -363,6 +378,11 @@ RTFIRFilter * RTFIRFilter_new(double * b, size_t nb, unsigned int flags, \
     return rtff;
 }
 
+// TODO: implement, but it needs to have matrix inversion to be "correct"
+RTFIRFilter * MatchedFilter_new(double * signal, size_t nb, double * covariance, size_t dim) {
+    return NULL;
+}
+
 void RTIIRFilter_get_all(RTFilter * rtf, double ** a, size_t * na, double ** b, size_t * nb) {
     IIRFilterBank * ifb = &((RTIIRFilter *) rtf)->ifb;
     *na = ifb->na;
@@ -425,6 +445,18 @@ int RTIIRFilter_stable_init(RTFilter * rtf, double sample) {
     RTIIRFilter_get_all(rtf, &a, &na, &b, &nb);
 
     size_t i = ((nb >= na) ? nb : na) - 1; // iir order
+    double num = 0.0;
+    double den = 0.0;
+    for (size_t j = 0; j <= 1; j++) {
+        if (j < nb) {
+            num += b[j];
+        }
+        if (j < na) {
+            den += a[j];
+        }
+    }
+    double d = num / den; // setting d = 1.0 goes back to the old method
+    
     rtif->state[i] = 0.0;
     double csv = 0.0;
     while (i) { // decrement after check
@@ -432,12 +464,12 @@ int RTIIRFilter_stable_init(RTFilter * rtf, double sample) {
             csv += b[i];
         }
         if (i < na) {
-            csv -= a[i];
+            csv -= a[i] * d;
         }
         i--;
         rtif->state[i] = csv*sample;
     }
-    rtf->filtered_value = sample;
+    rtf->filtered_value = d * sample;
     rtf->initialized = FILTER_INITIALIZED;
     return 0;
 }
@@ -1400,6 +1432,64 @@ int chebyshev2(RTIIRFilter * rtif, size_t order, double ripple, double wl, doubl
     //printf("w0 %.4f, wl %.4f, wu %.4f\n", w0, wl, wu);
     chebyshev2_digital_prototype(&rtif->ifb, order, ripple, w0);
     digital_prototype_to_IIRFilterBank(&rtif->ifb, order, w0, wl, wu);
+
+    return 0;
+}
+
+int PID(RTIIRFilter * rtif, double kp, double ki, double kd) {
+    if (!rtif || RTIIRFilter_get_a_size(rtif) < 2 || RTIIRFilter_get_b_size(rtif) < 3) {
+        return 1;
+    }
+    double * b = RTIIRFilter_get_b(rtif);
+    double * a = RTIIRFilter_get_a(rtif);
+    a[0] = 1.0;
+    a[1] = -1.0;
+    b[0] = kp + ki + kd;
+    b[1] = -1.0 * (kp + 2 * kd);
+    b[2] = kd;
+    return 0;
+}
+
+// TODO: 
+int thiran_digital_prototype(IIRFilterBank * ifb, size_t order, double tau) {
+    return 0;
+}
+
+// this only makes a low-pass filter
+int thiran(RTIIRFilter * rtif, size_t order, double tau, int (*initialize)(RTFilter * rtf, double sample)) {
+    if (!rtif || tau == 0 || !order) {
+        return 1;
+    }
+    if (IIRFilterBank_get_a_size(&rtif->ifb) < 1 || IIRFilterBank_get_b_size(&rtif->ifb) < order + 1)  {
+        return 2;
+    }
+    if (!initialize) {
+        rtif->rtf.initialize = RTIIRFilter_stable_init;
+    }
+
+    //printf("order %zu, mult * order + 1, %zu\n", order, mult * order + 1);
+    // need to figure out how to identify the "cutoff frequency and be able to convert it to high-pass & band-pass"
+    //printf("w0 %.4f, wl %.4f, wu %.4f\n", w0, wl, wu);
+
+    rtif->ifb.fb.nb = 1;
+    double * b = RTIIRFilter_get_b(rtif);
+    b[0] = 1.0;
+    for (size_t i = order + 1; i < 2 * order + 1; i++) {
+        b[0] *= i / (2 * tau + i); // tau is double so not integer division
+    }
+    rtif->ifb.na = order + 1;
+    double * a = RTIIRFilter_get_a(rtif);
+    size_t nck = 1;
+    for (size_t k = 0; k < order + 1; k++) {
+        a[k] = (k & 1 ? -1.0 : 1.0);
+        if (k) {
+            nck = nck * (order - k + 1) / (k);
+        }
+        for (size_t i = 0; i < order + 1; i++) {
+            a[k] *= (2 * tau + i) / (2 * tau + k + i);
+        }
+        a[k] *= nck;
+    }
 
     return 0;
 }

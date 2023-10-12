@@ -141,6 +141,8 @@ EXPORT RTIIRFilter * RTIIRFilter_new(double * a, size_t na, double * b, size_t n
 
 EXPORT int RTIIRFilter_update(RTFilter * rtf, double sample);
 
+EXPORT int RTFilter_updaten(double * out, RTFilter * rtf, double * samples, size_t n);
+
 EXPORT int RTIIRFilter_stable_init(RTFilter * rtf, double sample);
 
 EXPORT void RTIIRFilter_print(RTIIRFilter * rtif);
@@ -189,6 +191,8 @@ EXPORT int chebyshev1(RTIIRFilter * rtif, size_t order, double ripple, double wl
 
 EXPORT int chebyshev2(RTIIRFilter * rtif, size_t order, double ripple, double wl, double wu, 
     unsigned int flags, int (*initialize)(RTFilter * rtf, double sample));
+
+EXPORT int thiran(RTIIRFilter * rtif, size_t order, double tau, int (*initialize)(RTFilter * rtf, double sample));
 
 #ifndef __STDC_NO_COMPLEX__
 #include <complex.h>
