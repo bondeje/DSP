@@ -69,3 +69,6 @@ dspdll.moving_average.restype = c_int
 dspdll.moving_average.argtypes = [POINTER(RTFIRFilter_), c_size_t, POINTER(i_RTFilter__d)]
 dspdll.thiran.restype = c_int
 dspdll.thiran.argtypes = [POINTER(RTIIRFilter_), c_size_t, c_double, POINTER(i_RTFilter__d)]
+
+dspdll.filter_response_pzg_noc.restype = c_int
+dspdll.filter_response_pzg_noc.argtypes = [POINTER(c_double), POINTER(c_double), c_size_t, POINTER(c_double), POINTER(c_double), c_size_t, POINTER(c_double), POINTER(c_double), c_size_t, c_double, POINTER(c_double)]

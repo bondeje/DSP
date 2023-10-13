@@ -134,7 +134,7 @@ int filter_response_ab_noc(double * gain, double * phase, size_t ng, double * a,
     return status;
 }
 
-int filter_response_pzg_noc(double * gain, double * phase, size_t ng, double complex * zeros, size_t nz, double complex * poles, size_t np, double kgain, double * freq) { 
+int filter_response_pzg_noc(double * gain, double * phase, size_t ng, double * zeros_r, double * zeros_i, size_t nz, double * poles_r, double * poles_i, size_t np, double kgain, double * freq) { 
     if (!gain || !phase) {
         return 1;
     }
@@ -145,25 +145,37 @@ int filter_response_pzg_noc(double * gain, double * phase, size_t ng, double com
 #ifndef __STDC_NO_COMPLEX__
     /* wrapper for filter_gain */
     double complex * gainc = NULL;
+    double complex * zerosc = NULL;
+    double complex * polesc = NULL;
     if (!freq) {
-        gainc = (double complex *) DSP_MALLOC(ng * (sizeof(double complex) + sizeof(double)));
+        gainc = (double complex *) DSP_MALLOC(sizeof(double complex) * (ng + nz + np) + sizeof(double));
         if (!gainc) {
             return 1;
         }
-        freq = (double *) (gainc + ng); // freq is at the end of the gainc. this might violate strict aliasing
+        zerosc = (gainc + ng);
+        polesc = (zerosc + nz);
+        freq = (double *) (polesc + np); // freq is at the end of the gainc. this might violate strict aliasing
         double df = 1.0 / (ng-1);
         freq[0] = 0.0;
         for (size_t i = 1; i < ng; i++) {
             freq[i] = freq[i-1] + df;
         }
     } else {
-        gainc = (double complex *) DSP_MALLOC(ng * sizeof(double complex));
+        gainc = (double complex *) DSP_MALLOC(sizeof(double complex) * (ng + nz + np));
+        zerosc = (gainc + ng);
+        polesc = (zerosc + nz);
         if (!gainc) {
             return 1;
         }
     }
+    for (size_t i = 0; i < nz; i++) {
+        zerosc[i] = zeros_r[i] + I * zeros_i[i];
+    }
+    for (size_t i = 0; i < np; i++) {
+        polesc[i] = poles_r[i] + I * poles_i[i];
+    }
     
-    if (!(status = filter_response_pzg(gainc, ng, zeros, nz, poles, np, kgain, freq))) {
+    if (!(status = filter_response_pzg(gainc, ng, zerosc, nz, polesc, np, kgain, freq))) {
         /* unwrap gainc */
         for (size_t i = 0; i < ng; i++) {
             gain[i] = cabs(gainc[i]);

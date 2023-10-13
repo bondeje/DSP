@@ -5,4 +5,4 @@ EXPORT int filter_response_ab(double complex * gain, size_t ng, double * a, size
 EXPORT int filter_response_pzg(double complex * gain, size_t ng, double complex * zeros, size_t nz, double complex * poles, size_t np, double kgain, double * freq);
 #endif
 EXPORT int filter_response_ab_noc(double * gain, double * phase, size_t ng, double * a, size_t na, double * b, size_t nb, double * freq);
-EXPORT int filter_response_pzg_noc(double * gain, double * phase, size_t ng, double complex * zeros, size_t nz, double complex * poles, size_t np, double kgain, double * freq);
+EXPORT int filter_response_pzg_noc(double * gain, double * phase, size_t ng, double * zeros_r, double * zeros_i, size_t nz, double * poles_r, double * poles_i, size_t np, double kgain, double * freq);

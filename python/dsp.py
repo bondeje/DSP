@@ -123,6 +123,26 @@ def moving_average(window, initialize = None):
     dspdll.moving_average(byref_(rtff.cobj()), window, byref_(initialize))
     return rtff
 
+def filter_response_pzg(poles, zeros, kgain = 1, freqs = None, n = 200):
+    if freqs is None:
+        df = 1.0 / (n-1)
+        freqs = list(i * df for i in range(n))
+        c_freqs = (c_double * n)(*freqs)
+    else:
+        n = len(freqs)
+        c_freqs = (c_double * len(freqs))(*freqs)
+    np = len(poles)
+    c_poles_r = (c_double * np)(*[p[0] for p in poles])
+    c_poles_i = (c_double * np)(*[p[1] for p in poles])
+    nz = len(zeros)
+    c_zeros_r = (c_double * nz)(*[z[0] for z in zeros])
+    c_zeros_i = (c_double * nz)(*[z[1] for z in zeros])
+    c_gain = (c_double * n)()
+    c_phase = (c_double * n)()
+
+    dspdll.filter_response_pzg_noc(c_gain, c_phase, c_size_t(n), c_zeros_r, c_zeros_i, c_size_t(nz), c_poles_r, c_poles_i, c_size_t(np), c_double(kgain), c_freqs)
+    return list(g for g in c_gain), list(p for p in c_phase), freqs
+
 if __name__ == "__main__":
     import numpy as np
     from scipy.signal import butter, lfilter, lfilter_zi, freqz
